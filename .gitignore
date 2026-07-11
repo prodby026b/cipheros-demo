@@ -1,0 +1,36 @@
+# ── Cipher OS — فایل‌های حساس (تولیدشده توسط install.sh) ──
+cipher-core/.dbconfig.php
+cipher-core/.admin_panel_secret.php
+cipher-message/config.php
+cipherlog/config.php
+
+# ── لاگ‌ها و فایل‌های موقت ──
+*.log
+/tmp/cipheros_install_*.log
+
+# ── پوشه‌های آپلود کاربران ──
+cipher-chat/uploads/*
+!cipher-chat/uploads/.gitkeep
+cipher-gallery/uploads/*
+!cipher-gallery/uploads/.gitkeep
+cipherlog/uploads/*
+!cipherlog/uploads/.gitkeep
+
+# ── داده‌های ماژول‌ها ──
+cipher-links/data/links.json
+cipher-notes/data/*
+cipher-todo/data/*
+cipher-paste/data/*
+
+# ── تنظیمات ویرایشگر / سیستم‌عامل ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── php.ini محلی (cPanel-generated) ──
+# php.ini  ← این فایل کامیت شده، پس کامنت می‌ماند

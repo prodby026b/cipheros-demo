@@ -51,6 +51,7 @@ Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools 
 ### ⚙️ Installation
 
 **Requirements:** PHP 8.0+, MySQL/MariaDB, `mysqli` extension
+> The installer can auto-install PHP and the `mysqli` extension if a package manager is available (dnf, apt, pacman, zypper, brew).
 
 **One-command automated setup:**
 ```bash
@@ -59,7 +60,21 @@ cd cipheros-demo
 chmod +x install.sh
 ./install.sh
 ```
-The script checks requirements, configures the database, creates all tables, generates a secure random admin password, and optionally launches the built-in PHP server — fully automated.
+The universal installer checks (and can auto-install) requirements, configures the database, creates all tables, generates a secure random admin password, optionally launches the built-in PHP server, and even opens your browser. Fully interactive with sensible defaults.
+
+**Fully automatic (non-interactive) install:**
+```bash
+./install.sh --auto
+```
+
+**Common options:**
+```bash
+./install.sh --user root --pass "" --name cipher_os   # custom DB credentials
+./install.sh --auto --port 8080                        # auto on custom port
+./install.sh --cipherlog                               # also install the blog module
+./install.sh --uninstall                               # remove the installation
+./install.sh --help                                    # full options list
+```
 
 **Manual setup** is also possible: configure `cipher-core/.dbconfig.php`, run `php install.php` once, then delete it.
 
@@ -86,6 +101,7 @@ Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools 
 ### ⚙️ نصب
 
 **نیازمندی‌ها:** PHP 8.0+، MySQL/MariaDB، افزونه `mysqli`
+> نصب‌کننده در صورت وجود پکیج‌منیجر (dnf، apt، pacman، zypper، brew) می‌تواند PHP و افزونه `mysqli` را به‌صورت خودکار نصب کند.
 
 **نصب خودکار تک‌دستوری:**
 ```bash
@@ -94,7 +110,21 @@ cd cipheros-demo
 chmod +x install.sh
 ./install.sh
 ```
-این اسکریپت نیازمندی‌ها را بررسی می‌کند، دیتابیس را می‌سازد، یک رمز تصادفی امن برای ادمین تولید می‌کند، و در صورت تمایل سرور داخلی PHP را هم اجرا می‌کند — کاملاً خودکار.
+این اسکریپت قدرتمند نیازمندی‌ها را بررسی (و در صورت نیاز نصب) می‌کند، دیتابیس را می‌سازد، یک رمز تصادفی امن برای ادمین تولید می‌کند، سرور داخلی PHP را اجرا می‌کند و حتی مرورگر را باز می‌کند — کاملاً خودکار و تعاملی.
+
+**نصب کاملاً خودکار (بدون تعامل):**
+```bash
+./install.sh --auto
+```
+
+**گزینه‌های پرکاربرد:**
+```bash
+./install.sh --user root --pass "" --name cipher_os   # اعتبارنامه دلخواه
+./install.sh --auto --port 8080                        # خودکار روی پورت دلخواه
+./install.sh --cipherlog                               # نصب ماژول وبلاگ هم
+./install.sh --uninstall                               # حذف کامل نصب
+./install.sh --help                                    # نمایش همه گزینه‌ها
+```
 
 **نصب دستی** هم ممکن است: `cipher-core/.dbconfig.php` را تنظیم کنید، یک‌بار `php install.php` را اجرا کنید، سپس آن را حذف کنید.
 
