@@ -2,14 +2,17 @@
 
 # ⚡ CIPHER OS
 
-### یک اکوسیستم داشبورد شخصی خودمیزبان (Self-Hosted) با بیش از ۴۰ سرویس یکپارچه
+### A Self-Hosted Personal Dashboard Ecosystem with 40+ Integrated Services
 
-ساخته شده با **PHP** و **MySQL** — توسط **prodby026b**
+Built with **PHP** & **MySQL** — by **prodby026b**
 
 ![PHP](https://img.shields.io/badge/PHP-8.0%2B-777BB4?style=flat-square&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-Compatible-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![License](https://img.shields.io/badge/License-Demo%20Edition-orange?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
+
+**🌐 Language / زبان / اللغة / Idioma / Язык / 语言 / Langue:**
+[English](#-english) · [فارسی](#-فارسی) · [العربية](#-العربية) · [Español](#-español) · [Русский](#-русский) · [中文](#-中文) · [Français](#-français)
 
 </div>
 
@@ -21,86 +24,203 @@
 
 <br>
 
-## 📖 درباره پروژه
+---
 
-**Cipher OS** یک داشبورد شخصی ماژولار و تمام‌عیار است که ده‌ها ابزار کاربردی روزمره — از مدیریت فایل و چت داخلی گرفته تا ابزارهای توسعه‌دهنده و مانیتورینگ شبکه — را در یک محیط یکپارچه، زیبا و سریع (Cinematic UI) کنار هم قرار می‌دهد.
+## 🇬🇧 English
 
-این ریپازیتوری **نسخه دمو (رایگان)** پروژه است. برخی از قابلیت‌های حساس و پیشرفته در نسخه **Pro** ارائه می‌شوند و در نسخه دمو با نشان 🔒 قفل شده‌اند.
+### About
+**Cipher OS** is a fully modular, self-hosted personal dashboard bringing together 40+ everyday tools — file management, internal chat, developer utilities, network monitoring, and more — in one fast, beautifully designed control center.
 
-<br>
+This repository is the **Demo (Free) Edition**. Some advanced/security features are reserved for the **Pro** version and shown locked (🔒) here.
 
-## ✨ ماژول‌های موجود در نسخه دمو (۳۸ سرویس)
+### ✨ Included Modules (Demo — 38 services)
+Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools · Speed Test · Terminal · Logs · API · Code Editor · Markdown · JSON Tools · Paste · Settings · Gallery · Colors · Music · QR Code · Screenshot · Calls · Email · Wiki · Calc · Converter · App Store · Weather · Analytics · Tasks · Calendar · Notes · Todo · Docs · Links · Timer
 
-| دسته | سرویس‌ها |
-|---|---|
-| ⚡ **هسته سیستم** | Media · Cloud · Stream · Chat · Desktop · Dashboard |
-| 🛰️ **عملیات و زیرساخت** | Network · IP Tools · Speed Test · Terminal · Logs · API |
-| 💻 **توسعه‌دهندگان** | Code Editor · Markdown · JSON Tools · Paste |
-| 🔐 **امنیت** | Settings |
-| 🎨 **خلاقیت** | Gallery · Colors · Music · QR Code · Screenshot |
-| 📡 **ارتباطات** | Calls · Email · Wiki |
-| 🔧 **ابزارها** | Calc · Converter · App Store · Weather · Analytics |
-| 📋 **بهره‌وری** | Tasks · Calendar · Notes · Todo · Docs · Links · Timer |
-
-<br>
-
-## 🔒 قابلیت‌های نسخه Pro
-
+### 🔒 Pro-Only Features
 <p align="center">
   <img src=".github/assets/pro-locked-modules.png" alt="Pro Locked Modules" width="100%">
 </p>
 
-این سرویس‌ها در نسخه دمو غیرفعال (Locked) هستند و فقط در نسخه Pro در دسترسند:
+- 🤖 **Cipher AI** — dedicated AI assistant
+- 🔐 **Cipher Vault** — secure storage for sensitive data
+- 🔑 **Cipher Passwords** — internal password manager
+- 🗄️ **Cipher Database** — SQL database management
+- 💾 **Cipher Backup** — automated backups
+- 📡 **Cipher Monitor** — real-time server monitoring
 
-- 🤖 **Cipher AI** — دستیار هوش مصنوعی اختصاصی
-- 🔐 **Cipher Vault** — ذخیره امن اطلاعات حساس
-- 🔑 **Cipher Passwords** — مدیریت رمزهای عبور داخلی
-- 🗄️ **Cipher Database** — مدیریت بانک اطلاعات و کوئری‌های SQL
-- 💾 **Cipher Backup** — بک‌آپ خودکار و مدیریت نسخه‌های ذخیره
-- 📡 **Cipher Monitor** — مانیتورینگ Real-time سرور
+### ⚙️ Installation
+**Requirements:** PHP 8.0+, MySQL/MariaDB, Apache/Nginx or shared hosting (cPanel compatible)
+
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
+php -S localhost:8000
+```
+Then: configure each module's `config.php` with your DB credentials, import the `schema.sql` files, and open `index.php`.
+
+### 💎 Want the Pro Version?
+Contact me directly — see [Contact](#-contact--تماس) below.
 
 <br>
 
-## ⚙️ نصب و راه‌اندازی
+---
 
-### پیش‌نیازها
-- PHP `8.0` یا بالاتر
-- MySQL / MariaDB
-- وب‌سرور Apache/Nginx یا هاست اشتراکی با پشتیبانی PHP (cPanel سازگار)
+## 🇮🇷 فارسی
 
-### مراحل نصب
+### درباره پروژه
+**Cipher OS** یک داشبورد شخصی ماژولار و تمام‌عیار است که ده‌ها ابزار کاربردی روزمره را در یک محیط یکپارچه، زیبا و سریع کنار هم قرار می‌دهد.
 
+این ریپازیتوری **نسخه دمو (رایگان)** است. برخی قابلیت‌های پیشرفته فقط در نسخه **Pro** ارائه می‌شوند و اینجا قفل (🔒) نمایش داده می‌شوند.
+
+### ✨ ماژول‌های دمو (۳۸ سرویس)
+Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools · Speed Test · Terminal · Logs · API · Code Editor · Markdown · JSON Tools · Paste · Settings · Gallery · Colors · Music · QR Code · Screenshot · Calls · Email · Wiki · Calc · Converter · App Store · Weather · Analytics · Tasks · Calendar · Notes · Todo · Docs · Links · Timer
+
+### 🔒 قابلیت‌های نسخه Pro
+- 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ نصب
 ```bash
-# 1) کلون کردن ریپازیتوری
-git clone https://github.com/USERNAME/cipheros-demo.git
+git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
+php -S localhost:8000
+```
+فایل‌های `config.php` را تنظیم کنید، `schema.sql` را ایمپورت کنید، و `index.php` را باز کنید.
 
-# 2) اجرای لوکال با سرور داخلی PHP (یا آپلود روی هاست)
+### 💎 نسخه Pro می‌خواهید؟
+از بخش [تماس](#-contact--تماس) پایین صفحه با من در ارتباط باشید.
+
+<br>
+
+---
+
+## 🇸🇦 العربية
+
+### حول المشروع
+**Cipher OS** لوحة تحكم شخصية معيارية بالكامل، تجمع أكثر من ٤٠ أداة يومية — إدارة الملفات، الدردشة الداخلية، أدوات المطورين، مراقبة الشبكة، والمزيد — في مركز تحكم واحد سريع وأنيق.
+
+هذا المستودع هو **النسخة التجريبية (المجانية)**. بعض الميزات المتقدمة مخصصة لنسخة **Pro** وتظهر مقفلة (🔒) هنا.
+
+### 🔒 ميزات حصرية لنسخة Pro
+🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ التثبيت
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
 php -S localhost:8000
 ```
 
-سپس:
-1. فایل‌های `config.php` مربوط به هر ماژول (مثل `cipher-message/config.php`) را با اطلاعات دیتابیس خودتان تنظیم کنید.
-2. فایل‌های `schema.sql` موجود در ماژول‌ها را در دیتابیس خود ایمپورت کنید.
-3. به آدرس `index.php` سر بزنید 🚀
+### 💎 هل تريد نسخة Pro؟
+تواصل معي مباشرة — انظر قسم [التواصل](#-contact--تماس) أدناه.
 
 <br>
 
-## 🗂 ساختار پروژه
+---
 
+## 🇪🇸 Español
+
+### Acerca del proyecto
+**Cipher OS** es un panel personal modular y autoalojado que reúne más de 40 herramientas cotidianas — gestión de archivos, chat interno, utilidades para desarrolladores, monitoreo de red y más — en un centro de control rápido y elegante.
+
+Este repositorio es la **Edición Demo (Gratuita)**. Algunas funciones avanzadas están reservadas para la versión **Pro** y aparecen bloqueadas (🔒) aquí.
+
+### 🔒 Funciones exclusivas de Pro
+🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ Instalación
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
+php -S localhost:8000
 ```
-cipheros-demo/
-├── cipher-core/          # هسته اصلی، تم و امنیت
-├── cipher-<module>/      # هر سرویس در پوشه اختصاصی خودش
-├── index.php             # داشبورد اصلی
-└── README.md
-```
+
+### 💎 ¿Quieres la versión Pro?
+Contáctame directamente — ver [Contacto](#-contact--تماس) abajo.
 
 <br>
 
-## 💎 نسخه Pro
+---
 
-برای دسترسی به قابلیت‌های امنیتی و پیشرفته (Vault, Passwords, Database Manager, Backup, Monitor, AI) به نسخه Pro نیاز دارید. برای اطلاع از قیمت و نحوه خرید با من در ارتباط باشید.
+## 🇷🇺 Русский
+
+### О проекте
+**Cipher OS** — полностью модульная, самостоятельно размещаемая персональная панель, объединяющая более 40 повседневных инструментов — управление файлами, внутренний чат, утилиты для разработчиков, мониторинг сети и многое другое — в едином быстром и красивом центре управления.
+
+Этот репозиторий — **Демо (бесплатная) версия**. Некоторые продвинутые функции доступны только в версии **Pro** и здесь показаны заблокированными (🔒).
+
+### 🔒 Функции только для Pro
+🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ Установка
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
+php -S localhost:8000
+```
+
+### 💎 Хотите версию Pro?
+Свяжитесь со мной напрямую — см. раздел [Контакты](#-contact--تماس) ниже.
+
+<br>
+
+---
+
+## 🇨🇳 中文
+
+### 关于项目
+**Cipher OS** 是一个完全模块化的自托管个人仪表盘，集成了 40 多种日常工具——文件管理、内部聊天、开发者工具、网络监控等——于一个快速美观的控制中心。
+
+本仓库为**演示（免费）版**。部分高级功能仅在 **Pro** 版本中提供，此处以锁定状态（🔒）显示。
+
+### 🔒 仅限 Pro 版的功能
+🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ 安装
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
+php -S localhost:8000
+```
+
+### 💎 想要 Pro 版本？
+直接联系我 — 见下方[联系方式](#-contact--تماس)。
+
+<br>
+
+---
+
+## 🇫🇷 Français
+
+### À propos du projet
+**Cipher OS** est un tableau de bord personnel entièrement modulaire et auto-hébergé, réunissant plus de 40 outils du quotidien — gestion de fichiers, chat interne, outils de développement, surveillance réseau et plus encore — dans un centre de contrôle rapide et élégant.
+
+Ce dépôt est l'**Édition Démo (Gratuite)**. Certaines fonctionnalités avancées sont réservées à la version **Pro** et apparaissent verrouillées (🔒) ici.
+
+### 🔒 Fonctionnalités exclusives à Pro
+🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
+
+### ⚙️ Installation
+```bash
+git clone https://github.com/prodby026b/cipheros-demo.git
+cd cipheros-demo
+php -S localhost:8000
+```
+
+### 💎 Vous voulez la version Pro ?
+Contactez-moi directement — voir [Contact](#-contact--تماس) ci-dessous.
+
+<br>
+
+---
+
+## 📬 Contact / تماس
+
+<div align="center">
+
+📧 **Email:** [prodby026b@gmail.com](mailto:prodby026b@gmail.com)
+💬 **Telegram:** [@prodby026b](https://t.me/prodby026b)
+
+</div>
 
 <br>
 
@@ -108,6 +228,6 @@ cipheros-demo/
 
 <div align="center">
 
-ساخته شده با ❤️ توسط **prodby026b**
+Made with ❤️ by **prodby026b**
 
 </div>
