@@ -1,7 +1,16 @@
 <?php
 session_start();
 
-$adminPassword = "varxk72mq6bb8"; // اینو حتما عوض کن
+// Admin panel password is read from a local, gitignored secret file.
+// Generated automatically by install.sh — never hardcode it here.
+$secretFile = __DIR__ . '/cipher-core/.admin_panel_secret.php';
+if (file_exists($secretFile)) {
+    $adminPassword = require $secretFile;
+} else {
+    // Not configured yet — block access until install.sh (or manual setup) runs.
+    http_response_code(503);
+    die('پنل مدیریت هنوز پیکربندی نشده است. لطفاً ./install.sh را اجرا کنید یا فایل cipher-core/.admin_panel_secret.php را دستی بسازید.');
+}
 $dataFile = __DIR__ . '/dashboard_data.json';
 
 $defaultData = [
@@ -14,7 +23,7 @@ $defaultData = [
 ];
 
 if (isset($_POST['login_password'])) {
-    if ($_POST['login_password'] === $adminPassword) {
+    if (hash_equals((string)$adminPassword, (string)$_POST['login_password'])) {
         $_SESSION['is_admin'] = true;
         // Redirect to the admin page after successful login
         header("Location: admin.php");

@@ -15,7 +15,7 @@ $config = [
     'db_pass'     => '',          // از cPanel > MySQL Databases بگیر
     'db_charset'  => 'utf8mb4',
     'admin_user'  => 'prodby026b',
-    'admin_pass'  => 'cipher2026',  // CHANGE THIS
+    'admin_pass'  => '',  // You MUST set this in the form below before installing
     'admin_email' => 'admin@cipherlog.sh',
     'blog_name'   => 'CipherLog',
     'blog_tagline'=> 'Linux & Network // Deep Stack',
@@ -28,6 +28,11 @@ $success = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $config = array_merge($config, $_POST);
 
+    if (empty($config['admin_pass']) || strlen($config['admin_pass']) < 8) {
+        $errors[] = 'Admin password is required and must be at least 8 characters.';
+    }
+
+    if (empty($errors)) {
     try {
         // Connect without DB name first
         $pdo = new PDO(
@@ -275,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Database error: " . $e->getMessage();
     } catch (Exception $e) {
         $errors[] = "Error: " . $e->getMessage();
+    }
     }
 }
 ?>
