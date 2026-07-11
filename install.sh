@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
 #
-#  ⚡ ════════════════════════════════════════════════════════════════
+#  ==========================================================================
 #   CIPHER OS  —  Universal Installer  (Demo Edition)
-#  ═══════════════════════════════════════════════════════════════════
-#   اسکریپت نصب خودکار، قدرتمند و شیک
-#   به‌صورت خودکار PHP / MySQL را تشخیص داده و نصب می‌کند،
-#   دیتابیس می‌سازد، رمز امن تولید می‌کند و سرور را راه‌اندازی می‌کند.
-#  ────────────────────────────────────────────────────────────────────
+#  ==========================================================================
+#   Auto-detects and installs PHP / MySQL, builds databases, generates
+#   secure credentials, and launches the built-in PHP server.
+#  --------------------------------------------------------------------------
 #
-#   نحوه استفاده:
-#     ./install.sh                          # تعاملی — کامل
-#     ./install.sh --auto                   # کاملاً خودکار با پیش‌فرض‌ها
+#   Usage:
+#     ./install.sh                            # Interactive — full setup
+#     ./install.sh --auto                     # Fully automatic (defaults)
 #     ./install.sh --host localhost --user root --pass "" --name cipher_os
-#     ./install.sh --no-serve --port 8080   # بدون اجرای سرور
-#     ./install.sh --uninstall              # حذف کامل نصب
+#     ./install.sh --no-serve --port 8080     # Don't start server
+#     ./install.sh --uninstall                # Remove installation
 #     ./install.sh --help
 #
-#  ═══════════════════════════════════════════════════════════════════
+#  ==========================================================================
 
-set -euo pipefail
-trap 'error "خطای غیرمنتظره در خط $LINENO"; cleanup_on_fail' ERR
-
+# NOTE: We do NOT use `set -e` because it causes fragile exits when
+#       non-critical commands (DB probes, optional modules) fail.
+#       Instead, every critical step checks its own exit code explicitly.
+set -uo pipefail
 IFS=$'\n\t'
 
-# ─────────────────────────────────────────────────────────────────────
-#  رنگ‌ها و توابع کمکی
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Colors & helpers
+# ─────────────────────────────────────────────────────────────────────────
 if [[ -t 1 ]]; then
     C_RESET='\033[0m'
     C_CYAN='\033[0;36m'
@@ -34,52 +34,42 @@ if [[ -t 1 ]]; then
     C_RED='\033[0;31m'
     C_BOLD='\033[1m'
     C_MAGENTA='\033[0;35m'
-    C_BLUE='\033[0;34m'
     C_DIM='\033[2m'
     C_BG_CYAN='\033[46m\033[30m'
 else
     C_RESET=''; C_CYAN=''; C_GREEN=''; C_YELLOW=''; C_RED=''
-    C_BOLD=''; C_MAGENTA=''; C_BLUE=''; C_DIM=''; C_BG_CYAN=''
+    C_BOLD=''; C_MAGENTA=''; C_DIM=''; C_BG_CYAN=''
 fi
 
-# ── آیکون‌ها ──
-ICON_INFO="▸"
-ICON_OK="✔"
-ICON_WARN="⚠"
-ICON_ERR="✘"
-ICON_STEP="◆"
+info()  { echo -e "  ${C_CYAN}>${C_RESET} $1"; }
+ok()    { echo -e "  ${C_GREEN}OK${C_RESET}  ${C_DIM}$1${C_RESET}"; }
+warn()  { echo -e "  ${C_YELLOW}!!${C_RESET}  ${C_YELLOW}$1${C_RESET}"; }
+error() { echo -e "  ${C_RED}XX${C_RESET}  ${C_RED}${C_BOLD}$1${C_RESET}"; }
 
-# شمارش گام‌ها
 declare -i STEP_NUM=0
-declare -i TOTAL_STEPS=7
-
-info()  { echo -e "  ${C_CYAN}${ICON_INFO}${C_RESET}  $1"; }
-ok()    { echo -e "  ${C_GREEN}${ICON_OK}${C_RESET}  ${C_DIM}$1${C_RESET}"; }
-warn()  { echo -e "  ${C_YELLOW}${ICON_WARN}${C_RESET}  ${C_YELLOW}$1${C_RESET}"; }
-error() { echo -e "  ${C_RED}${ICON_ERR}${C_RESET}  ${C_RED}${C_BOLD}$1${C_RESET}"; }
+declare -i TOTAL_STEPS=6
 
 step() {
     STEP_NUM+=1
     echo ""
     echo -e "  ${C_BG_CYAN}${C_BOLD} STEP ${STEP_NUM}/${TOTAL_STEPS} ${C_RESET}  ${C_BOLD}$1${C_RESET}"
-    echo -e "  ${C_DIM}──────────────────────────────────────────────────${C_RESET}"
+    echo -e "  ${C_DIM}----------------------------------------------------${C_RESET}"
 }
 
-# ── Banner ───────────────────────────────────────────────────────────
 banner() {
     echo ""
-    echo -e "  ${C_CYAN}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    echo -e "  ${C_CYAN}║${C_RESET}                                                      ${C_CYAN}║${C_RESET}"
-    echo -e "  ${C_CYAN}║${C_RESET}   ${C_BOLD}⚡  C I P H E R   O S${C_RESET}   ${C_DIM}—${C_RESET}  ${C_MAGENTA}Demo Edition${C_RESET}     ${C_CYAN}║${C_RESET}"
-    echo -e "  ${C_CYAN}║${C_RESET}         ${C_DIM}Universal Installer${C_RESET}                           ${C_CYAN}║${C_RESET}"
-    echo -e "  ${C_CYAN}║${C_RESET}                                                      ${C_CYAN}║${C_RESET}"
-    echo -e "  ${C_CYAN}╚══════════════════════════════════════════════════════╝${C_RESET}"
+    echo -e "  ${C_CYAN}======================================================${C_RESET}"
+    echo -e "  ${C_CYAN}|${C_RESET}                                                    ${C_CYAN}|${C_RESET}"
+    echo -e "  ${C_CYAN}|${C_RESET}   ${C_BOLD}CIPHER OS${C_RESET}  ${C_DIM}--${C_RESET}  ${C_MAGENTA}Demo Edition${C_RESET}               ${C_CYAN}|${C_RESET}"
+    echo -e "  ${C_CYAN}|${C_RESET}   ${C_DIM}Universal Installer${C_RESET}                              ${C_CYAN}|${C_RESET}"
+    echo -e "  ${C_CYAN}|${C_RESET}                                                    ${C_CYAN}|${C_RESET}"
+    echo -e "  ${C_CYAN}======================================================${C_RESET}"
     echo ""
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تنظیمات پیش‌فرض (قابل تغییر با فلگ‌ها)
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Defaults (overridable via flags)
+# ─────────────────────────────────────────────────────────────────────────
 DB_HOST="localhost"
 DB_USER="root"
 DB_PASS=""
@@ -92,43 +82,34 @@ UNINSTALL=false
 INSTALL_CIPHERLOG=false
 SKIP_DB=false
 FORCE=false
+SCRIPT_DIR=""
 
-# ─────────────────────────────────────────────────────────────────────
-#  تشخیص سیستم‌عامل و پکیج‌منیجر
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Detect OS & package manager
+# ─────────────────────────────────────────────────────────────────────────
+OS_NAME="Linux"
+OS_ID="unknown"
+PKG_MGR=""
+
 detect_os() {
     if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
+        . /etc/os-release 2>/dev/null || true
         OS_ID="${ID:-unknown}"
-        OS_LIKE="${ID_LIKE:-}"
         OS_NAME="${NAME:-Linux}"
-    else
-        OS_ID="unknown"
-        OS_LIKE=""
-        OS_NAME="$(uname -s)"
     fi
 
-    # تشخیص پکیج‌منیجر
-    if command -v dnf >/dev/null 2>&1; then
-        PKG_MGR="dnf"
-    elif command -v yum >/dev/null 2>&1; then
-        PKG_MGR="yum"
-    elif command -v apt-get >/dev/null 2>&1; then
-        PKG_MGR="apt"
-    elif command -v pacman >/dev/null 2>&1; then
-        PKG_MGR="pacman"
-    elif command -v zypper >/dev/null 2>&1; then
-        PKG_MGR="zypper"
-    elif command -v brew >/dev/null 2>&1; then
-        PKG_MGR="brew"
-    else
-        PKG_MGR=""
+    if   command -v dnf      >/dev/null 2>&1; then PKG_MGR="dnf"
+    elif command -v yum      >/dev/null 2>&1; then PKG_MGR="yum"
+    elif command -v apt-get  >/dev/null 2>&1; then PKG_MGR="apt"
+    elif command -v pacman   >/dev/null 2>&1; then PKG_MGR="pacman"
+    elif command -v zypper   >/dev/null 2>&1; then PKG_MGR="zypper"
+    elif command -v brew     >/dev/null 2>&1; then PKG_MGR="brew"
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تجزیه فلگ‌ها
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Argument parsing
+# ─────────────────────────────────────────────────────────────────────────
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -144,13 +125,10 @@ parse_args() {
             --skip-db)     SKIP_DB=true; shift ;;
             --force)       FORCE=true; shift ;;
             --uninstall)   UNINSTALL=true; shift ;;
-            -h|--help)
-                show_help
-                exit 0
-                ;;
+            -h|--help)     show_help; exit 0 ;;
             *)
-                error "گزینه ناشناخته: $1"
-                echo "  برای راهنما اجرا کنید: ./install.sh --help"
+                error "Unknown option: $1"
+                echo "  Run './install.sh --help' for usage."
                 exit 1
                 ;;
         esac
@@ -160,127 +138,143 @@ parse_args() {
 show_help() {
     cat << "HELP"
 
-  ⚡  Cipher OS  —  Universal Installer
-  ════════════════════════════════════════════════════
+  CIPHER OS -- Universal Installer
+  ======================================================
 
-  نحوه استفاده:
-    ./install.sh [گزینه‌ها...]
+  Usage:
+    ./install.sh [options...]
 
-  گزینه‌ها:
-    --host <addr>      آدرس دیتابیس              [پیش‌فرض: localhost]
-    --user <user>      نام کاربری دیتابیس         [پیش‌فرض: root]
-    --pass <pass>      رمز عبور دیتابیس           [پیش‌فرض: خالی]
-    --name <db>        نام دیتابیس اصلی           [پیش‌فرض: cipher_os]
-    --msg-name <db>    نام دیتابیس پیام‌رسان       [پیش‌فرض: cipheros_messages]
-    --port <n>         پورت سرور PHP              [پیش‌فرض: 8000]
-    --no-serve         اجرا نکردن سرور داخلی
-    --auto             نصب کاملاً خودکار (با پیش‌فرض‌ها)
-    --cipherlog        نصب ماژول وبلاگ (CipherLog) هم انجام شود
-    --skip-db          رد کردن مرحله ساخت دیتابیس
-    --force            نصب مجدد حتی اگر قبلاً نصب شده
-    --uninstall        حذف کامل نصب
+  Options:
+    --host <addr>     Database host            [default: localhost]
+    --user <user>     Database username        [default: root]
+    --pass <pass>     Database password        [default: empty]
+    --name <db>       Main database name       [default: cipher_os]
+    --msg-name <db>   Messenger database name  [default: cipheros_messages]
+    --port <n>        PHP server port          [default: 8000]
+    --no-serve        Don't start the PHP server
+    --auto            Fully automatic (non-interactive)
+    --cipherlog       Also install the blog module
+    --skip-db         Skip database creation step
+    --force           Reinstall even if already installed
+    --uninstall       Remove the installation
+    -h, --help        Show this help
 
-    -h, --help         نمایش این راهنما
+  Examples:
+    ./install.sh                                    # Interactive
+    ./install.sh --auto                             # Fully automatic
+    ./install.sh --user root --pass secret123       # Custom credentials
+    ./install.sh --cipherlog --port 9000            # Blog + custom port
 
-  مثال‌ها:
-    ./install.sh                                    # نصب تعاملی
-    ./install.sh --auto                             # کاملاً خودکار
-    ./install.sh --user admin --pass secret123      # با اعتبارنامه مشخص
-    ./install.sh --cipherlog --port 9000            # با وبلاگ، پورت 9000
-
-  ════════════════════════════════════════════════════
+  ======================================================
 
 HELP
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تابع حذف
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Uninstall
+# ─────────────────────────────────────────────────────────────────────────
 do_uninstall() {
-    banner
-    echo -e "  ${C_RED}${C_BOLD}حذف Cipher OS${C_RESET}"
-    echo -e "  ${C_DIM}──────────────────────────────────────────────────${C_RESET}"
+    echo -e "  ${C_RED}${C_BOLD}Uninstall Cipher OS${C_RESET}"
+    echo -e "  ${C_DIM}----------------------------------------------------${C_RESET}"
 
     if [[ "$AUTO_MODE" != true ]]; then
-        read -rp $'\n  '"${C_YELLOW}آیا از حذف کامل نصب مطمئن هستید؟ [y/N]: ${C_RESET}" confirm
+        read -rp $'\n  '"${C_YELLOW}Are you sure you want to remove the installation? [y/N]: ${C_RESET}" confirm
         if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            info "حذف لغو شد."
+            info "Uninstall cancelled."
             exit 0
         fi
     fi
 
     echo ""
-    info "حذف فایل‌های کانفیگ تولیدشده..."
+    info "Removing generated config files..."
 
-    local removed=0
     for f in \
         "$SCRIPT_DIR/cipher-core/.dbconfig.php" \
         "$SCRIPT_DIR/cipher-core/.admin_panel_secret.php" \
+        "$SCRIPT_DIR/cipher-message/config.php" \
         "$SCRIPT_DIR/cipherlog/config.php"; do
         if [[ -f "$f" ]]; then
             rm -f "$f"
-            ok "حذف شد: $(basename "$f")"
-            removed=$((removed + 1))
+            ok "Removed: $(basename "$f")"
         fi
     done
 
-    # حذف دیتابیس
-    if [[ "$SKIP_DB" != true ]] && command -v php >/dev/null 2>&1 && php -m 2>/dev/null | grep -qi mysqli; then
+    # Optionally drop databases
+    if [[ "$SKIP_DB" != true ]] && command -v php >/dev/null 2>&1; then
         echo ""
-        if [[ "$AUTO_MODE" == true ]] || [[ "$FORCE" == true ]]; then
-            local drop_confirm="y"
+        if [[ "$AUTO_MODE" == true || "$FORCE" == true ]]; then
+            drop_confirm="y"
         else
-            read -rp $'  '"${C_YELLOW}دیتابیس‌ها هم حذف شوند؟ [y/N]: ${C_RESET}" drop_confirm
+            read -rp $"  ${C_YELLOW}Also drop the databases? [y/N]: ${C_RESET}" drop_confirm || drop_confirm="n"
         fi
 
         if [[ "$drop_confirm" =~ ^[Yy]$ ]]; then
-            php -r "
-                \$conf = [
-                    'host' => '$DB_HOST',
-                    'user' => '$DB_USER',
-                    'pass' => '$DB_PASS',
-                    'names' => ['$DB_NAME', '$DB_MSG_NAME']
-                ];
-                mysqli_report(MYSQLI_REPORT_OFF);
-                \$conn = @mysqli_connect(\$conf['host'], \$conf['user'], \$conf['pass']);
-                if (!\$conn) { echo '  ⚠ اتصال به MySQL ناموفق — دیتابیس حذف نشد\n'; exit; }
-                foreach (\$conf['names'] as \$db) {
-                    @mysqli_query(\$conn, 'DROP DATABASE IF EXISTS \`' . \$db . '\`');
-                    echo \"  ✔ دیتابیس حذف شد: \$db\n\";
-                }
-            " || warn "حذف دیتابیس با خطا مواجه شد (شاید قبلاً حذف شده)"
+            local res
+            res=$(php_run_drop_dbs) || res="skip"
+            if [[ "$res" == "ok" ]]; then
+                ok "Databases dropped"
+            else
+                warn "Could not drop databases (connection failed or already gone)"
+            fi
         fi
     fi
 
-    # بازگردانی users_schema.sql به حالت اولیه
+    # Restore users_schema.sql from git
     if [[ -f "$SCRIPT_DIR/cipher-core/users_schema.sql" ]]; then
-        if git -C "$SCRIPT_DIR" checkout -- cipher-core/users_schema.sql 2>/dev/null; then
-            ok "بازگردانی users_schema.sql"
-        fi
+        git -C "$SCRIPT_DIR" checkout -- cipher-core/users_schema.sql 2>/dev/null && \
+            ok "Restored users_schema.sql" || true
     fi
 
     echo ""
-    echo -e "  ${C_GREEN}${C_BOLD}✔ حذف کامل شد.${C_RESET}"
-    echo -e "  ${C_DIM}فایل‌های پروژه دست‌نخورده باقی ماندند.${C_RESET}"
+    echo -e "  ${C_GREEN}${C_BOLD}Uninstall complete.${C_RESET}"
+    echo -e "  ${C_DIM}Project files are untouched.${C_RESET}"
     echo ""
     exit 0
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  بررسی و نصب خودکار وابستگی‌ها
-# ─────────────────────────────────────────────────────────────────────
+# Helper: run PHP to drop databases (returns a status string on stdout)
+php_run_drop_dbs() {
+    # Writes a temporary PHP file to avoid quoting nightmares
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_uninstall.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
+<?php
+mysqli_report(MYSQLI_REPORT_OFF);
+$conn = @mysqli_connect(
+    getenv('CIPHER_DB_HOST'),
+    getenv('CIPHER_DB_USER'),
+    getenv('CIPHER_DB_PASS')
+);
+if (!$conn) { echo "skip"; exit; }
+foreach (explode(',', getenv('CIPHER_DB_NAMES')) as $db) {
+    $db = trim($db);
+    if ($db === '') continue;
+    @mysqli_query($conn, "DROP DATABASE IF EXISTS `$db`");
+}
+echo "ok";
+PHPEOF
+    CIPHER_DB_HOST="$DB_HOST" CIPHER_DB_USER="$DB_USER" CIPHER_DB_PASS="$DB_PASS" \
+        CIPHER_DB_NAMES="$DB_NAME,$DB_MSG_NAME" php "$tmp" 2>/dev/null
+    local rc=$?
+    rm -f "$tmp"
+    return $rc
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+#  Install PHP + extensions if missing
+# ─────────────────────────────────────────────────────────────────────────
 install_php() {
     local php_pkgs=""
     case "$PKG_MGR" in
-        dnf|yum)  php_pkgs="php-cli php-mysqlnd php-mbstring php-json php-xml" ;;
+        dnf|yum)  php_pkgs="php-cli php-mysqlnd php-mbstring php-xml" ;;
         apt)      php_pkgs="php-cli php-mysql php-mbstring php-xml" ;;
-        pacman)   php_pkgs="php php-mysqlnd" ;;
+        pacman)   php_pkgs="php" ;;
         zypper)   php_pkgs="php-cli php-mysql" ;;
         brew)     php_pkgs="php" ;;
         *)
-            error "نمی‌توانم PHP را به‌صورت خودکار نصب کنم."
+            error "Cannot auto-install PHP (no package manager detected)."
             echo ""
-            echo "  لطفاً دستی نصب کنید:"
+            echo "  Please install PHP 8.0+ manually:"
             echo "    Fedora/RHEL  : sudo dnf install php-cli php-mysqlnd"
             echo "    Debian/Ubuntu: sudo apt install php-cli php-mysql"
             echo "    Arch         : sudo pacman -S php"
@@ -289,197 +283,230 @@ install_php() {
             ;;
     esac
 
-    warn "PHP نصب نیست. تلاش برای نصب خودکار با $PKG_MGR..."
-    info "بسته‌ها: $php_pkgs"
+    warn "PHP is not installed. Attempting auto-install via $PKG_MGR..."
+    info "Packages: $php_pkgs"
     echo ""
-
     if sudo "$PKG_MGR" install -y $php_pkgs; then
-        ok "PHP با موفقیت نصب شد"
+        ok "PHP installed successfully"
     else
-        error "نصب PHP ناموفق بود. لطفاً دستی نصب کنید."
+        error "PHP installation failed. Please install it manually."
         exit 1
     fi
 }
 
-check_requirements() {
-    local missing=()
+install_mysqli_ext() {
+    local ext_pkg=""
+    case "$PKG_MGR" in
+        dnf|yum)  ext_pkg="php-mysqlnd" ;;
+        apt)      ext_pkg="php-mysql" ;;
+        pacman)   ext_pkg="php" ;;
+        zypper)   ext_pkg="php-mysql" ;;
+        brew)     ext_pkg="php" ;;
+    esac
+    if [[ -z "$ext_pkg" ]]; then
+        error "mysqli extension is required but cannot auto-install it."
+        exit 1
+    fi
+    info "Installing $ext_pkg..."
+    sudo "$PKG_MGR" install -y "$ext_pkg" 2>/dev/null || true
+}
 
-    info "بررسی PHP..."
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 1: Check requirements
+# ─────────────────────────────────────────────────────────────────────────
+check_requirements() {
+    info "Checking PHP..."
     if ! command -v php >/dev/null 2>&1; then
         if [[ -n "$PKG_MGR" ]]; then
             install_php
         else
-            error "PHP نصب نیست و پکیج‌منیجر تشخیص داده نشد."
+            error "PHP is not installed and no package manager was detected."
             exit 1
         fi
     fi
     local php_ver
-    php_ver=$(php -r 'echo PHP_VERSION;')
+    php_ver=$(php -r 'echo PHP_VERSION;' 2>/dev/null)
     ok "PHP $php_ver"
 
-    # بررسی نسخه PHP ≥ 8.0
-    local php_major_minor
-    php_major_minor=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
-    if ! php -r "exit(version_compare('$php_major_minor', '8.0', '>=') ? 0 : 1);"; then
-        error "PHP ≥ 8.0 لازم است، نسخه شما: $php_ver"
+    # PHP >= 8.0
+    if ! php -r 'exit(version_compare(PHP_VERSION, "8.0.0", ">=") ? 0 : 1);' 2>/dev/null; then
+        error "PHP 8.0+ is required. You have: $php_ver"
         exit 1
     fi
 
-    info "بررسی پسوند mysqli..."
-    if ! php -m 2>/dev/null | grep -qi mysqli; then
-        warn "پسوند mysqli نصب نیست."
+    info "Checking mysqli extension..."
+    if ! php -m 2>/dev/null | grep -qi '^mysqli$'; then
+        warn "mysqli extension is missing."
         if [[ -n "$PKG_MGR" ]]; then
-            local ext_pkg
-            case "$PKG_MGR" in
-                dnf|yum)  ext_pkg="php-mysqlnd" ;;
-                apt)      ext_pkg="php-mysql" ;;
-                pacman)   ext_pkg="php-sqlite" ;;  # pacman معمولاً mysql را دارد
-                *)        ext_pkg="php-mysql" ;;
-            esac
-            info "نصب $ext_pkg..."
-            sudo "$PKG_MGR" install -y "$ext_pkg" 2>/dev/null || true
-            if php -m 2>/dev/null | grep -qi mysqli; then
-                ok "mysqli نصب شد"
+            install_mysqli_ext
+            if php -m 2>/dev/null | grep -qi '^mysqli$'; then
+                ok "mysqli installed and enabled"
             else
-                error "نمی‌توانم mysqli را نصب کنم. لطفاً دستی نصب کنید."
+                error "Could not install mysqli. Please install php-mysqlnd / php-mysql manually."
                 exit 1
             fi
         else
-            error "پسوند mysqli لازم است."
+            error "mysqli extension is required."
             exit 1
         fi
     else
-        ok "mysqli فعال است"
+        ok "mysqli enabled"
     fi
 
-    info "بررسی MySQL/MariaDB..."
-    local mysql_found=false
+    info "Checking MySQL/MariaDB..."
     if command -v mysql >/dev/null 2>&1; then
-        ok "MySQL client یافت شد"
-        mysql_found=true
+        ok "MySQL client found"
     elif command -v mariadb >/dev/null 2>&1; then
-        ok "MariaDB client یافت شد"
-        mysql_found=true
+        ok "MariaDB client found"
     else
-        warn "MySQL/MariaDB کلاینت یافت نشد."
-        echo -e "  ${C_DIM}اسکریپت از طریق PHP تلاش می‌کند، اما سرویس MySQL باید در حال اجرا باشد.${C_RESET}"
+        warn "MySQL/MariaDB client not found in PATH."
+        echo -e "  ${C_DIM}The installer will try via PHP, but the MySQL service must be running.${C_RESET}"
     fi
 
-    # بررسی سرویس MySQL در حال اجرا
+    # Check if MySQL service is running
+    local mysql_running=false
     if command -v systemctl >/dev/null 2>&1; then
-        if systemctl is-active --quiet mysqld 2>/dev/null || \
-           systemctl is-active --quiet mariadb 2>/dev/null || \
-           systemctl is-active --quiet mysql 2>/dev/null; then
-            ok "سرویس MySQL/MariaDB در حال اجراست"
-        else
-            warn "سرویس MySQL/MariaDB به‌نظر می‌رسد غیرفعال است."
-            if [[ "$AUTO_MODE" != true ]]; then
-                read -rp "  تلاش برای روشن کردن سرویس؟ [Y/n]: " svc_choice
-                if [[ "${svc_choice:-Y}" =~ ^[Yy]$ ]]; then
-                    for svc in mysqld mariadb mysql; do
-                        if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "$svc"; then
-                            sudo systemctl start "$svc" 2>/dev/null && sudo systemctl enable "$svc" 2>/dev/null && break
-                        fi
-                    done
-                    if systemctl is-active --quiet mysqld 2>/dev/null || \
-                       systemctl is-active --quiet mariadb 2>/dev/null || \
-                       systemctl is-active --quiet mysql 2>/dev/null; then
-                        ok "سرویس روشن شد"
-                    else
-                        warn "نمی‌توانم سرویس را روشن کنم. ادامه می‌دهیم..."
+        for svc in mariadb mysqld mysql; do
+            if systemctl is-active --quiet "$svc" 2>/dev/null; then
+                mysql_running=true
+                break
+            fi
+        done
+    fi
+    # Also check via process list (for XAMPP/MAMP/Homebrew)
+    if [[ "$mysql_running" == false ]]; then
+        if pgrep -x mysqld >/dev/null 2>&1 || pgrep -x mariadbd >/dev/null 2>&1; then
+            mysql_running=true
+        fi
+    fi
+
+    if [[ "$mysql_running" == true ]]; then
+        ok "MySQL/MariaDB service is running"
+    else
+        warn "MySQL/MariaDB does not appear to be running."
+        if [[ "$AUTO_MODE" != true ]]; then
+            read -rp "  Try to start the service? [Y/n]: " svc_choice || svc_choice="Y"
+            if [[ "${svc_choice:-Y}" =~ ^[Yy]$ ]]; then
+                for svc in mariadb mysqld mysql; do
+                    if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "$svc"; then
+                        sudo systemctl start "$svc" 2>/dev/null && \
+                            sudo systemctl enable "$svc" 2>/dev/null || true
+                        break
                     fi
-                fi
+                done
             fi
         fi
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  بررسی اتصال دیتابیس
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  DB connection test (writes a temp PHP file to avoid quoting issues)
+#  Returns: 0 = connected, 1 = failed
+# ─────────────────────────────────────────────────────────────────────────
 verify_db_connection() {
-    info "تست اتصال به دیتابیس ($DB_HOST)..."
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_dbtest.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
+<?php
+mysqli_report(MYSQLI_REPORT_OFF);
+$conn = @mysqli_connect(
+    getenv('CIPHER_DB_HOST'),
+    getenv('CIPHER_DB_USER'),
+    getenv('CIPHER_DB_PASS')
+);
+if (!$conn) {
+    echo "FAIL:" . mysqli_connect_error();
+    exit(1);
+}
+$ver = mysqli_get_server_info($conn);
+echo "OK:" . $ver;
+PHPEOF
     local result
-    result=$(php -r "
-        mysqli_report(MYSQLI_REPORT_OFF);
-        \$conn = @mysqli_connect('$DB_HOST', '$DB_USER', '$DB_PASS');
-        if (!\$conn) {
-            echo 'FAIL:' . mysqli_connect_error();
-            exit(1);
-        }
-        echo 'OK';
-        \$ver = mysqli_get_server_info(\$conn);
-        echo ':' . \$ver;
-    " 2>&1) || true
+    result=$(CIPHER_DB_HOST="$DB_HOST" CIPHER_DB_USER="$DB_USER" CIPHER_DB_PASS="$DB_PASS" \
+        php "$tmp" 2>/dev/null) || result="FAIL:PHP error"
+    rm -f "$tmp"
 
-    if [[ "$result" == OK:* ]]; then
-        ok "اتصال برقرار شد — ${result#OK:}"
-        return 0
-    elif [[ "$result" == FAIL:* ]]; then
-        error "اتصال ناموفق: ${result#FAIL:}"
-        return 1
-    else
-        error "اتصال ناموفق: $result"
-        return 1
-    fi
+    case "$result" in
+        OK:*)
+            ok "Connected -- ${result#OK:}"
+            return 0
+            ;;
+        FAIL:*)
+            error "Connection failed: ${result#FAIL:}"
+            return 1
+            ;;
+        *)
+            error "Connection failed: $result"
+            return 1
+            ;;
+    esac
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  پیکربندی دیتابیس
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Collect DB credentials (interactive)
+# ─────────────────────────────────────────────────────────────────────────
 collect_db_info() {
     if [[ "$AUTO_MODE" == true ]]; then
-        info "حالت خودکار — استفاده از پیش‌فرض‌ها"
+        info "Auto mode -- using defaults"
         return
     fi
 
     echo ""
-    echo -e "  ${C_BOLD}پیکربندی دیتابیس${C_RESET} ${C_DIM}(Enter برای پیش‌فرض)${C_RESET}"
-    echo -e "  ${C_DIM}──────────────────────────────────────────────────${C_RESET}"
+    echo -e "  ${C_BOLD}Database Configuration${C_RESET} ${C_DIM}(press Enter for [default])${C_RESET}"
+    echo -e "  ${C_DIM}----------------------------------------------------${C_RESET}"
 
     local input
-    read -rp "  آدرس سرور        [$DB_HOST]: " input && DB_HOST="${input:-$DB_HOST}"
-    read -rp "  نام کاربری       [$DB_USER]: " input && DB_USER="${input:-$DB_USER}"
+    read -rp "  DB Host [$DB_HOST]: " input || input=""
+    [[ -n "$input" ]] && DB_HOST="$input"
 
-    # رمز عبور پنهان
-    read -rsp "  رمز عبور         (پنهان، Enter برای خالی): " DB_PASS_INPUT
+    read -rp "  DB User [$DB_USER]: " input || input=""
+    [[ -n "$input" ]] && DB_USER="$input"
+
+    read -rsp "  DB Password (hidden, Enter for empty): " input || input=""
     echo ""
-    [[ -n "$DB_PASS_INPUT" ]] && DB_PASS="$DB_PASS_INPUT"
+    [[ -n "$input" ]] && DB_PASS="$input"
 
-    read -rp "  نام دیتابیس اصلی [$DB_NAME]: " input && DB_NAME="${input:-$DB_NAME}"
+    read -rp "  DB Name [$DB_NAME]: " input || input=""
+    [[ -n "$input" ]] && DB_NAME="$input"
 }
 
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 2: Write config files
+# ─────────────────────────────────────────────────────────────────────────
 write_db_config() {
-    info "نوشتن cipher-core/.dbconfig.php ..."
+    # Escape single quotes for safe PHP string embedding
+    local e_host e_user e_pass e_name e_msgname
+    e_host="${DB_HOST//\'/\\\'}"
+    e_user="${DB_USER//\'/\\\'}"
+    e_pass="${DB_PASS//\'/\\\'}"
+    e_name="${DB_NAME//\'/\\\'}"
+    e_msgname="${DB_MSG_NAME//\'/\\\'}"
 
-    # Escape single quotes in password for PHP
-    local safe_pass
-    safe_pass="${DB_PASS//\'/\\\'}"
-
-    cat > "$SCRIPT_DIR/cipher-core/.dbconfig.php" << PHP
+    # --- cipher-core/.dbconfig.php ---
+    info "Writing cipher-core/.dbconfig.php ..."
+    cat > "$SCRIPT_DIR/cipher-core/.dbconfig.php" << PHPDOC
 <?php
 // Auto-generated by install.sh on $(date '+%Y-%m-%d %H:%M:%S')
-// ⚠️ این فایل را در مخزن عمومی commit نکنید.
+// WARNING: Do NOT commit this file to a public repository.
 return [
-    'host' => '${DB_HOST}',
-    'user' => '${DB_USER}',
-    'pass' => '${safe_pass}',
-    'name' => '${DB_NAME}',
+    'host' => '${e_host}',
+    'user' => '${e_user}',
+    'pass' => '${e_pass}',
+    'name' => '${e_name}',
 ];
-PHP
+PHPDOC
+    chmod 600 "$SCRIPT_DIR/cipher-core/.dbconfig.php"
+    ok "cipher-core/.dbconfig.php written (chmod 600)"
 
-    chmod 600 "$SCRIPT_DIR/cipher-core/.dbconfig.php" 2>/dev/null || true
-    ok "cipher-core/.dbconfig.php نوشته شد (مجوز 600)"
-
-    # config ماژول پیام‌رسان
-    info "نوشتن cipher-message/config.php ..."
-    cat > "$SCRIPT_DIR/cipher-message/config.php" << PHP
+    # --- cipher-message/config.php ---
+    info "Writing cipher-message/config.php ..."
+    cat > "$SCRIPT_DIR/cipher-message/config.php" << PHPDOC
 <?php
-// cipher-message/config.php — generated by install.sh
-define('DB_HOST', '${DB_HOST}');
-define('DB_USER', '${DB_USER}');
-define('DB_PASS', '${safe_pass}');
-define('DB_NAME', '${DB_MSG_NAME}');
+// cipher-message/config.php -- generated by install.sh
+define('DB_HOST', '${e_host}');
+define('DB_USER', '${e_user}');
+define('DB_PASS', '${e_pass}');
+define('DB_NAME', '${e_msgname}');
 
 try {
     \$pdo = new PDO(
@@ -500,215 +527,217 @@ function updateHeartbeat(\$pdo, \$username) {
     \$stmt = \$pdo->prepare("INSERT INTO users (username, last_seen) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
     \$stmt->execute([\$username]);
 }
-?>
-PHP
-    ok "cipher-message/config.php نوشته شد"
+PHPDOC
+    ok "cipher-message/config.php written"
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تولید رمز و راز امنیتی
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 3: Generate credentials
+# ─────────────────────────────────────────────────────────────────────────
 generate_credentials() {
-    info "تولید رمز امن تصادفی برای ادمین..."
-    ADMIN_PASS=$(php -r 'echo bin2hex(random_bytes(6));')
-    ADMIN_HASH=$(php -r "echo password_hash('$ADMIN_PASS', PASSWORD_DEFAULT);")
-    ok "رمز ادمین تولید شد"
+    info "Generating secure random admin password..."
+    ADMIN_PASS=$(php -r 'echo bin2hex(random_bytes(6));' 2>/dev/null)
+    ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_DEFAULT);" 2>/dev/null)
+    ok "Admin password generated"
 
-    info "تولید راز پنل مدیریت (admin.php)..."
-    PANEL_SECRET=$(php -r 'echo bin2hex(random_bytes(8));')
-    cat > "$SCRIPT_DIR/cipher-core/.admin_panel_secret.php" << PHP
+    info "Generating admin panel secret (admin.php)..."
+    PANEL_SECRET=$(php -r 'echo bin2hex(random_bytes(8));' 2>/dev/null)
+
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_secret.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
 <?php
-// Auto-generated by install.sh on $(date '+%Y-%m-%d %H:%M:%S')
-// ⚠️ این فایل را در مخزن عمومی commit نکنید.
-return '${PANEL_SECRET}';
-PHP
-    chmod 600 "$SCRIPT_DIR/cipher-core/.admin_panel_secret.php" 2>/dev/null || true
-    ok "راز پنل مدیریت تولید شد (مجوز 600)"
+$secret = getenv('CIPHER_SECRET');
+$content = "<?php\n";
+$content .= "// Auto-generated by install.sh on " . date('Y-m-d H:i:s') . "\n";
+$content .= "// WARNING: Do NOT commit this file to a public repository.\n";
+$content .= "return '" . str_replace("'", "\\'", $secret) . "';\n";
+file_put_contents(getenv('CIPHER_TARGET'), $content);
+chmod(getenv('CIPHER_TARGET'), 0600);
+PHPEOF
+    CIPHER_SECRET="$PANEL_SECRET" CIPHER_TARGET="$SCRIPT_DIR/cipher-core/.admin_panel_secret.php" \
+        php "$tmp" 2>/dev/null
+    rm -f "$tmp"
+    ok "Admin panel secret generated (chmod 600)"
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  وصله کردن users_schema.sql با هش تازه
-# ─────────────────────────────────────────────────────────────────────
+# Patch users_schema.sql with fresh hash
 patch_user_schema() {
-    info "به‌روزرسانی users_schema.sql با هش رمز جدید..."
+    info "Patching users_schema.sql with fresh password hash..."
 
-    local safe_hash
-    safe_hash="${ADMIN_HASH//\'/\\\'}"
-
-    # بازگردانی فایل از git قبل از وصله (در صورت نصب مجدد)
+    # Restore from git first (in case of reinstall)
     git -C "$SCRIPT_DIR" checkout -- cipher-core/users_schema.sql 2>/dev/null || true
 
-    php -r '
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_patch.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
+<?php
 $file = $argv[1];
 $hash = $argv[2];
 $sql = file_get_contents($file);
-// جایگزینی خط INSERT برای ادمین
-$sql = preg_replace(
-    "/INSERT IGNORE INTO users \(username, password_hash, role\)\s*VALUES \(\x27admin\x27, \x27[^\x27]*\x27, \x27admin\x27\);/",
-    "INSERT IGNORE INTO users (username, password_hash, role)\nVALUES (\x27admin\x27, \x27" . $hash . "\x27, \x27admin\x27);",
-    $sql
-);
-file_put_contents($file, $sql);
-' "$SCRIPT_DIR/cipher-core/users_schema.sql" "$safe_hash"
-    ok "هش رمز ادمین در schema جایگزین شد"
+$pattern = "/INSERT IGNORE INTO users \(username, password_hash, role\)\s*VALUES \('admin', '[^']*', 'admin'\);/";
+$replace = "INSERT IGNORE INTO users (username, password_hash, role)\nVALUES ('admin', '" . $hash . "', 'admin');";
+$new = preg_replace($pattern, $replace, $sql);
+if ($new === $sql && $new !== null) {
+    // Fallback: try to append the INSERT if pattern didn't match
+    fwrite(STDERR, "warning: pattern not matched, appending INSERT\n");
+}
+file_put_contents($file, $new);
+PHPEOF
+    php "$tmp" "$SCRIPT_DIR/cipher-core/users_schema.sql" "$ADMIN_HASH" 2>/dev/null || true
+    rm -f "$tmp"
+    ok "Password hash injected into schema"
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  اجرای نصب‌کننده PHP (ساخت دیتابیس و جداول)
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 4: Create databases and tables
+# ─────────────────────────────────────────────────────────────────────────
 run_php_installer() {
-    info "ساخت دیتابیس‌ها و جداول..."
+    info "Running database installer (creates DB + tables)..."
 
     local log_file="/tmp/cipheros_install_$$.log"
-
     if php "$SCRIPT_DIR/install.php" > "$log_file" 2>&1; then
-        ok "دیتابیس‌ها و جداول ساخته شدند"
-        # استخراج خلاصه موفقیت
-        grep -oE '✅[^<]*' "$log_file" 2>/dev/null | sed 's/<[^>]*>//g' | while read -r line; do
-            echo -e "     ${C_GREEN}$line${C_RESET}"
+        ok "Databases and tables created"
+        # Show success summary (strip HTML)
+        grep -oE '✅[^<]*' "$log_file" 2>/dev/null | sed 's/<[^>]*>//g' | while IFS= read -r line; do
+            [[ -n "$line" ]] && echo -e "       ${C_GREEN}$line${C_RESET}"
         done
-    else
-        error "نصب‌کننده PHP با خطا مواجه شد:"
-        echo ""
-        echo -e "  ${C_DIM}─── لاگ خطا ───${C_RESET}"
-        cat "$log_file" | sed 's/^/  /'
-        echo -e "  ${C_DIM}──────────────${C_RESET}"
         rm -f "$log_file"
-        exit 1
+        return 0
+    else
+        error "PHP installer failed:"
+        echo ""
+        echo -e "  ${C_DIM}--- error log ---${C_RESET}"
+        sed 's/^/  /' "$log_file"
+        echo -e "  ${C_DIM}-----------------${C_RESET}"
+        rm -f "$log_file"
+        return 1
     fi
-    rm -f "$log_file"
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  ساخت دیتابیس پیام‌رسان (cipher-message)
-# ─────────────────────────────────────────────────────────────────────
+# Create the messenger database (cipher-message module)
 create_message_db() {
-    info "ساخت دیتابیس پیام‌رسان ($DB_MSG_NAME)..."
-    php -r "
-        mysqli_report(MYSQLI_REPORT_OFF);
-        \$conn = @mysqli_connect('$DB_HOST', '$DB_USER', '$DB_PASS');
-        if (!\$conn) { echo 'warn'; exit; }
-        mysqli_query(\$conn, 'CREATE DATABASE IF NOT EXISTS \`$DB_MSG_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        mysqli_select_db(\$conn, '$DB_MSG_NAME');
-        mysqli_query(\$conn, \"CREATE TABLE IF NOT EXISTS users (
-            username VARCHAR(32) PRIMARY KEY,
-            last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-            is_online TINYINT(1) DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\");
-        echo 'ok';
-    " 2>/dev/null | {
-        read -r res
-        case "$res" in
-            ok)   ok "دیتابیس پیام‌رسان ساخته شد" ;;
-            warn) warn "نمی‌توانم دیتابیس پیام‌رسان بسازم — اتصال ناموفق" ;;
-            *)    warn "نمی‌توانم دیتابیس پیام‌رسان بسازم" ;;
-        esac
-    }
+    info "Creating messenger database ($DB_MSG_NAME)..."
+
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_msgdb.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
+<?php
+mysqli_report(MYSQLI_REPORT_OFF);
+$conn = @mysqli_connect(
+    getenv('CIPHER_DB_HOST'),
+    getenv('CIPHER_DB_USER'),
+    getenv('CIPHER_DB_PASS')
+);
+if (!$conn) { echo "FAIL"; exit(1); }
+
+$db = getenv('CIPHER_DB_MSGNAME');
+if (!mysqli_query($conn, "CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")) {
+    echo "FAIL:" . mysqli_error($conn);
+    exit(1);
+}
+mysqli_select_db($conn, $db);
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS users (
+    username VARCHAR(32) PRIMARY KEY,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_online TINYINT(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+echo "OK";
+PHPEOF
+    local result
+    result=$(CIPHER_DB_HOST="$DB_HOST" CIPHER_DB_USER="$DB_USER" CIPHER_DB_PASS="$DB_PASS" \
+        CIPHER_DB_MSGNAME="$DB_MSG_NAME" php "$tmp" 2>/dev/null) || result="FAIL"
+    rm -f "$tmp"
+
+    case "$result" in
+        OK)   ok "Messenger database created ($DB_MSG_NAME)" ;;
+        FAIL) warn "Could not create messenger database (non-fatal, module may not work)" ;;
+        FAIL:*) warn "Messenger DB error: ${result#FAIL:}" ;;
+        *)    warn "Unexpected response creating messenger DB: $result" ;;
+    esac
+    # Non-fatal: always return 0 so the script continues
+    return 0
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  نصب ماژول CipherLog (وبلاگ)
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Optional: Install CipherLog (blog)
+# ─────────────────────────────────────────────────────────────────────────
 install_cipherlog() {
-    info "نصب ماژول CipherLog (وبلاگ)..."
+    info "Setting up CipherLog (blog module)..."
 
     local cl_pass
-    cl_pass=$(php -r 'echo bin2hex(random_bytes(6));')
+    cl_pass=$(php -r 'echo bin2hex(random_bytes(6));' 2>/dev/null)
 
-    # ارسال POST به install.php از طریق PHP-CLI (شبیه‌سازی فرم)
-    php -r "
-        \$url = 'http://localhost:$PORT/cipherlog/install.php';
-        \$data = [
-            'db_host'     => '$DB_HOST',
-            'db_name'     => 'cipherlog',
-            'db_user'     => '$DB_USER',
-            'db_pass'     => '${DB_PASS//\'/\\\'}',
-            'admin_user'  => 'admin',
-            'admin_pass'  => '$cl_pass',
-            'admin_email' => 'admin@cipherlog.local',
-            'blog_name'   => 'CipherLog',
-            'blog_tagline'=> 'Linux & Network',
-            'blog_url'    => 'http://localhost:$PORT/cipherlog',
-        ];
+    local tmp
+    tmp=$(mktemp /tmp/cipheros_cl.XXXXXX.php)
+    cat > "$tmp" << 'PHPEOF'
+<?php
+$host = getenv('CIPHER_DB_HOST'); $user = getenv('CIPHER_DB_USER');
+$pass = getenv('CIPHER_DB_PASS'); $port = getenv('CIPHER_PORT');
+try {
+    $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `cipherlog` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "OK";
+} catch (Exception $e) {
+    echo "FAIL:" . $e->getMessage();
+}
+PHPEOF
+    local result
+    result=$(CIPHER_DB_HOST="$DB_HOST" CIPHER_DB_USER="$DB_USER" CIPHER_DB_PASS="$DB_PASS" \
+        CIPHER_PORT="$PORT" php "$tmp" 2>/dev/null) || result="FAIL"
+    rm -f "$tmp"
 
-        // مستقیماً با PDO نصب کن (بدون HTTP)
-        try {
-            \$pdo = new PDO(
-                'mysql:host=' . \$data['db_host'] . ';charset=utf8mb4',
-                \$data['db_user'],
-                \$data['db_pass'],
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
-            \$pdo->exec('CREATE DATABASE IF NOT EXISTS \`' . \$data['db_name'] . '\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-            \$pdo->exec('USE \`' . \$data['db_name'] . '\`');
-            echo 'ok';
-        } catch (Exception \$e) {
-            echo 'fail:' . \$e->getMessage();
-        }
-    " 2>/dev/null | {
-        read -r res
-        case "$res" in
-            ok)
-                ok "دیتابیس CipherLog ساخته شد"
-                # اجرای install.php از طریق CLI با POST شبیه‌سازی
-                info "اجرای نصب‌کننده وبلاگ..."
-                echo ""
-                echo -e "     ${C_YELLOW}⚠ CipherLog از طریق مرورگر کامل نصب می‌شود:${C_RESET}"
-                echo -e "     ${C_DIM}http://localhost:$PORT/cipherlog/install.php${C_RESET}"
-                echo -e "     ${C_DIM}رمز پیشنهادی ادمین وبلاگ: $cl_pass${C_RESET}"
-                ;;
-            *)
-                warn "نمی‌توانم دیتابیس CipherLog بسازم: $res"
-                ;;
-        esac
-    }
+    case "$result" in
+        OK)
+            ok "CipherLog database created"
+            echo ""
+            echo -e "       ${C_YELLOW}!!  Complete CipherLog setup in your browser:${C_RESET}"
+            echo -e "       ${C_DIM}http://localhost:$PORT/cipherlog/install.php${C_RESET}"
+            echo -e "       ${C_DIM}Suggested blog admin password: $cl_pass${C_RESET}"
+            ;;
+        FAIL:*)
+            warn "Could not create CipherLog database: ${result#FAIL:}"
+            ;;
+        *)
+            warn "Could not create CipherLog database"
+            ;;
+    esac
+    return 0
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  حذف install.php برای امنیت
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 5: Cleanup & security
+# ─────────────────────────────────────────────────────────────────────────
 cleanup_installer() {
-    if [[ "$AUTO_MODE" == true ]] || [[ "$FORCE" == true ]]; then
-        rm -f "$SCRIPT_DIR/install.php"
-        ok "install.php حذف شد (امنیت)"
-        return
+    if [[ "$AUTO_MODE" == true || "$FORCE" == true ]]; then
+        local del_choice="Y"
+    else
+        echo ""
+        read -rp "  Delete install.php for security? [Y/n]: " del_choice || del_choice="Y"
     fi
 
-    echo ""
-    read -rp "  حذف install.php برای امنیت؟ [Y/n]: " del_choice
     if [[ "${del_choice:-Y}" =~ ^[Yy]$ ]]; then
         rm -f "$SCRIPT_DIR/install.php"
-        ok "install.php حذف شد"
+        ok "install.php removed"
     else
-        warn "حتماً قبل از انتشار، install.php را دستی حذف کنید!"
+        warn "Remember to delete install.php before going to production!"
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تنظیم مجوز پوشه‌ها
-# ─────────────────────────────────────────────────────────────────────
 set_permissions() {
-    info "تنظیم مجوز پوشه‌های آپلود..."
-
+    info "Setting directory permissions..."
     find "$SCRIPT_DIR" -type d -iname "uploads" -exec chmod 755 {} \; 2>/dev/null || true
     find "$SCRIPT_DIR" -type d -iname "data"    -exec chmod 755 {} \; 2>/dev/null || true
     find "$SCRIPT_DIR" -type d -iname "cache"   -exec chmod 755 {} \; 2>/dev/null || true
-
-    # فایل‌های JSON داده‌ها
     find "$SCRIPT_DIR" -name "*.json" -path "*/data/*" -exec chmod 664 {} \; 2>/dev/null || true
-
-    # فایل‌های مخفی حساس
     chmod 600 "$SCRIPT_DIR/cipher-core/.dbconfig.php" 2>/dev/null || true
     chmod 600 "$SCRIPT_DIR/cipher-core/.admin_panel_secret.php" 2>/dev/null || true
-
-    ok "مجوزها تنظیم شدند"
+    ok "Permissions set"
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  ساختن/به‌روزرسانی .gitignore
-# ─────────────────────────────────────────────────────────────────────
 ensure_gitignore() {
-    info "بررسی .gitignore..."
+    info "Checking .gitignore..."
     local gi="$SCRIPT_DIR/.gitignore"
     touch "$gi"
 
@@ -718,199 +747,190 @@ ensure_gitignore() {
         "cipher-message/config.php"
         "cipherlog/config.php"
     )
-
     local added=0
     for entry in "${entries[@]}"; do
-        if ! grep -qxF "$entry" "$gi"; then
+        if ! grep -qxF "$entry" "$gi" 2>/dev/null; then
             echo "$entry" >> "$gi"
             added=$((added + 1))
         fi
     done
-
     if [[ $added -gt 0 ]]; then
-        ok ".gitignore به‌روزرسانی شد ($added مورد اضافه شد)"
+        ok ".gitignore updated ($added entry/entries added)"
     else
-        ok ".gitignore از قبل کامل بود"
+        ok ".gitignore already complete"
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  نمایش اطلاعات نهایی و راه‌اندازی سرور
-# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
+#  Step 6: Summary & server launch
+# ─────────────────────────────────────────────────────────────────────────
 show_summary() {
     local host="localhost"
     echo ""
-    echo -e "  ${C_GREEN}${C_BOLD}╔══════════════════════════════════════════════════════╗${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}   ${C_BOLD}✅  نصب با موفقیت کامل شد!${C_RESET}                          ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}╠══════════════════════════════════════════════════════╣${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}                                                      ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_BOLD}🔗 آدرس ورود:${C_RESET}      http://${host}:${PORT}/login.php    ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_BOLD}👤 نام کاربری:${C_RESET}     admin                             ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_BOLD}🔑 رمز عبور:${C_RESET}       ${C_YELLOW}${ADMIN_PASS}${C_RESET}                  ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_DIM}(این رمز فقط یک‌بار نمایش داده می‌شود)${C_RESET}       ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}                                                      ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_BOLD}🛠 پنل مدیریت:${C_RESET}    http://${host}:${PORT}/admin.php  ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}  ${C_BOLD}🔑 رمز پنل:${C_RESET}       ${C_YELLOW}${PANEL_SECRET}${C_RESET}                  ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}║${C_RESET}                                                      ${C_GREEN}${C_BOLD}║${C_RESET}"
-    echo -e "  ${C_GREEN}${C_BOLD}╚══════════════════════════════════════════════════════╝${C_RESET}"
+    echo -e "  ${C_GREEN}${C_BOLD}======================================================${C_RESET}"
+    echo -e "  ${C_GREEN}${C_BOLD}|${C_RESET}   ${C_BOLD}Installation complete!${C_RESET}                              ${C_GREEN}${C_BOLD}|${C_RESET}"
+    echo -e "  ${C_GREEN}${C_BOLD}======================================================${C_RESET}"
     echo ""
-    echo -e "  ${C_RED}⚠  پس از اولین ورود، حتماً رمز عبور را تغییر دهید!${C_RESET}"
+    echo -e "  ${C_BOLD}Login URL:${C_RESET}    http://${host}:${PORT}/login.php"
+    echo -e "  ${C_BOLD}Username:${C_RESET}     admin"
+    echo -e "  ${C_BOLD}Password:${C_RESET}     ${C_YELLOW}${C_BOLD}${ADMIN_PASS}${C_RESET}"
+    echo -e "  ${C_DIM}(shown only once -- save it now)${C_RESET}"
+    echo ""
+    echo -e "  ${C_BOLD}Admin panel:${C_RESET}  http://${host}:${PORT}/admin.php"
+    echo -e "  ${C_BOLD}Panel pwd:${C_RESET}    ${C_YELLOW}${C_BOLD}${PANEL_SECRET}${C_RESET}"
+    echo ""
+    echo -e "  ${C_RED}!!  Change your password after first login!${C_RESET}"
     echo ""
 }
 
 start_server() {
     if [[ "$SERVE" != true ]]; then
+        echo ""
+        info "Server not started. To run manually:"
+        echo -e "     ${C_DIM}php -S localhost:$PORT -t \"$SCRIPT_DIR\"${C_RESET}"
         return
     fi
 
     echo ""
-    if [[ "$AUTO_MODE" == true ]] || [[ "$FORCE" == true ]]; then
-        local serve_choice="Y"
-    else
-        read -rp "  راه‌اندازی سرور PHP روی پورت $PORT؟ [Y/n]: " serve_choice
+    local serve_choice="Y"
+    if [[ "$AUTO_MODE" != true && "$FORCE" != true ]]; then
+        read -rp "  Start PHP server on port $PORT? [Y/n]: " serve_choice || serve_choice="Y"
     fi
 
     if [[ "${serve_choice:-Y}" =~ ^[Yy]$ ]]; then
         echo ""
-        echo -e "  ${C_CYAN}${C_BOLD}🚀 سرور در حال اجراست...${C_RESET}"
-        echo -e "  ${C_DIM}مرورگر را باز کنید: http://localhost:$PORT/login.php${C_RESET}"
-        echo -e "  ${C_DIM}برای توقف: Ctrl+C${C_RESET}"
-        echo -e "  ${C_DIM}──────────────────────────────────────────────────${C_RESET}"
+        echo -e "  ${C_CYAN}${C_BOLD}Server starting...${C_RESET}"
+        echo -e "  ${C_DIM}Open: http://localhost:$PORT/login.php${C_RESET}"
+        echo -e "  ${C_DIM}Stop: Ctrl+C${C_RESET}"
+        echo -e "  ${C_DIM}----------------------------------------------------${C_RESET}"
         echo ""
 
-        # باز کردن مرورگر به‌صورت خودکار در صورت امکان
-        (sleep 1
-         if   command -v xdg-open >/dev/null 2>&1; then xdg-open "http://localhost:$PORT/login.php" >/dev/null 2>&1
-         elif command -v open      >/dev/null 2>&1; then open "http://localhost:$PORT/login.php" >/dev/null 2>&1
-         fi
+        # Try to open the browser after 1 second
+        (
+            sleep 1
+            url="http://localhost:$PORT/login.php"
+            if   command -v xdg-open >/dev/null 2>&1; then xdg-open "$url" >/dev/null 2>&1
+            elif command -v open      >/dev/null 2>&1; then open "$url" >/dev/null 2>&1
+            fi
         ) &
 
         php -S "localhost:$PORT" -t "$SCRIPT_DIR"
     else
         echo ""
-        info "سرور اجرا نشد. برای اجرای دستی:"
+        info "Server not started. To run manually:"
         echo -e "     ${C_DIM}php -S localhost:$PORT -t \"$SCRIPT_DIR\"${C_RESET}"
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────
-#  تابع پاکسازی هنگام خطا
-# ─────────────────────────────────────────────────────────────────────
-cleanup_on_fail() {
-    echo ""
-    warn "نصب ناموفق بود. فایل‌های تولیدشده:"
-    for f in \
-        "$SCRIPT_DIR/cipher-core/.dbconfig.php" \
-        "$SCRIPT_DIR/cipher-core/.admin_panel_secret.php"; do
-        [[ -f "$f" ]] && echo -e "     ${C_DIM}$f${C_RESET}"
-    done
-    echo -e "  ${C_DIM}می‌توانید با ./install.sh --uninstall همه چیز را پاک کنید.${C_RESET}"
-}
-
-# ═════════════════════════════════════════════════════════════════════
-#  جریان اصلی نصب
-# ═════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────
+#  Main flow
+# ─────────────────────────────────────────────────────────────────────────
 main() {
     parse_args "$@"
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     cd "$SCRIPT_DIR"
 
-    # ── حالت حذف ──
+    detect_os
+
+    # Uninstall mode
     if [[ "$UNINSTALL" == true ]]; then
-        detect_os
+        banner
         do_uninstall
     fi
 
     banner
-    detect_os
 
-    # ── نمایش اطلاعات سیستم ──
-    echo -e "  ${C_DIM}سیستم‌عامل:${C_RESET}  $OS_NAME"
-    echo -e "  ${C_DIM}پکیج‌منیجر:${C_RESET}  ${PKG_MGR:-نامشخص}"
-    echo -e "  ${C_DIM}مسیر:${C_RESET}       $SCRIPT_DIR"
-    echo ""
+    # System info
+    echo -e "  ${C_DIM}OS:           $OS_NAME${C_RESET}"
+    echo -e "  ${C_DIM}Package mgr:  ${PKG_MGR:-none}${C_RESET}"
+    echo -e "  ${C_DIM}Path:         $SCRIPT_DIR${C_RESET}"
 
-    # ── بررسی نصب قبلی ──
+    # Check for previous install
     if [[ -f "$SCRIPT_DIR/cipher-core/.dbconfig.php" && "$FORCE" != true ]]; then
-        warn "نصب قبلی تشخیص داده شد (cipher-core/.dbconfig.php وجود دارد)."
         echo ""
+        warn "Previous installation detected (cipher-core/.dbconfig.php exists)."
         if [[ "$AUTO_MODE" != true ]]; then
-            read -rp "  نصب مجدد روی نسخه فعلی؟ [y/N]: " reinstall
+            read -rp "  Reinstall over the current setup? [y/N]: " reinstall || reinstall="n"
             if [[ ! "$reinstall" =~ ^[Yy]$ ]]; then
-                info "نصب لغو شد."
-                echo -e "  ${C_DIM}برای حذف کامل: ./install.sh --uninstall${C_RESET}"
+                info "Installation cancelled."
+                echo -e "  ${C_DIM}To remove first: ./install.sh --uninstall${C_RESET}"
                 exit 0
             fi
         fi
     fi
 
-    # ── STEP 1: بررسی نیازمندی‌ها ──
-    step "بررسی و نصب نیازمندی‌ها"
+    # STEP 1: Requirements
+    step "Check & install requirements"
     check_requirements
 
-    # ── جمع‌آوری اطلاعات دیتابیس ──
-    step "پیکربندی دیتابیس"
+    # STEP 2: DB config + connection test (with retries)
+    step "Configure database"
     collect_db_info
 
-    # تست اتصال
     local max_retries=3
     local attempt=1
     while [[ $attempt -le $max_retries ]]; do
         if verify_db_connection; then
             break
         fi
-        if [[ $attempt -eq $max_retries ]] || [[ "$AUTO_MODE" == true ]]; then
-            error "نمی‌توان به دیتابیس متصل شد بعد از $max_retries تلاش."
+        if [[ $attempt -eq $max_retries || "$AUTO_MODE" == true ]]; then
             echo ""
-            echo -e "  ${C_BOLD}راه‌حل‌ها:${C_RESET}"
-            echo -e "  ${C_CYAN}▸${C_RESET} مطمئن شوید MySQL/MariaDB در حال اجراست:"
+            error "Cannot connect to database after $attempt attempt(s)."
+            echo ""
+            echo -e "  ${C_BOLD}Troubleshooting:${C_RESET}"
+            echo -e "  ${C_CYAN}>${C_RESET} Make sure MySQL/MariaDB is running:"
             echo -e "     ${C_DIM}sudo systemctl start mariadb${C_RESET}"
             echo -e "     ${C_DIM}sudo systemctl start mysqld${C_RESET}"
-            echo -e "  ${C_CYAN}▸${C_RESET} یا از XAMPP استفاده کنید."
+            echo ""
+            echo -e "  ${C_CYAN}>${C_RESET} On Fedora/RHEL, root often uses socket auth."
+            echo -e "     ${C_DIM}Try connecting with: sudo mysql${C_RESET}"
+            echo -e "     ${C_DIM}Or create a dedicated user:${C_RESET}"
+            echo -e "     ${C_DIM}  sudo mysql -e \"CREATE USER 'cipher'@'localhost' IDENTIFIED BY 'yourpass';${C_RESET}"
+            echo -e "     ${C_DIM}  sudo mysql -e \"GRANT ALL ON *.* TO 'cipher'@'localhost';\"${C_RESET}"
+            echo ""
+            echo -e "  ${C_CYAN}>${C_RESET} Then re-run with:"
+            echo -e "     ${C_DIM}./install.sh --user cipher --pass yourpass${C_RESET}"
             echo ""
             exit 1
         fi
-        warn "تلاش مجدد ($attempt/$max_retries)..."
+        warn "Retry ($attempt/$max_retries)..."
         attempt=$((attempt + 1))
         echo ""
         collect_db_info
     done
 
-    # ── STEP 3: نوشتن کانفیگ ──
-    step "نوشتن فایل‌های پیکربندی"
+    # STEP 3: Write configs & generate credentials
+    step "Write config files & generate credentials"
     write_db_config
     ensure_gitignore
-
-    # ── STEP 4: تولید اعتبارنامه‌ها ──
-    step "تولید رمزهای امنیتی"
     generate_credentials
-
-    # ── وصله کردن schema ──
     patch_user_schema
 
-    # ── STEP 5: ساخت دیتابیس و جداول ──
-    step "ساخت دیتابیس و جداول"
+    # STEP 4: Create databases
+    step "Create databases & tables"
     if [[ "$SKIP_DB" != true ]]; then
-        run_php_installer
+        if ! run_php_installer; then
+            exit 1
+        fi
         create_message_db
     else
-        warn "مرحله ساخت دیتابیس رد شد (--skip-db)"
+        warn "Database creation skipped (--skip-db)"
     fi
 
-    # ── نصب CipherLog در صورت درخواست ──
+    # Optional: CipherLog
     if [[ "$INSTALL_CIPHERLOG" == true ]]; then
         echo ""
-        info "نصب ماژول اضافی: CipherLog (وبلاگ)"
+        info "Installing optional module: CipherLog (blog)"
         install_cipherlog
     fi
 
-    # ── STEP 6: پاکسازی و امنیت ──
-    step "امنیت و پاکسازی"
+    # STEP 5: Security & cleanup
+    step "Security & cleanup"
     cleanup_installer
     set_permissions
 
-    # ── STEP 7: نمایش نتیجه ──
-    step "تکمیل نصب"
+    # STEP 6: Done
+    step "Installation complete"
     show_summary
     start_server
 }
