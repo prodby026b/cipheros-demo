@@ -49,14 +49,19 @@ Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools 
 - 📡 **Cipher Monitor** — real-time server monitoring
 
 ### ⚙️ Installation
-**Requirements:** PHP 8.0+, MySQL/MariaDB, Apache/Nginx or shared hosting (cPanel compatible)
 
+**Requirements:** PHP 8.0+, MySQL/MariaDB, `mysqli` extension
+
+**One-command automated setup:**
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
-Then: configure each module's `config.php` with your DB credentials, import the `schema.sql` files, and open `index.php`.
+The script checks requirements, configures the database, creates all tables, generates a secure random admin password, and optionally launches the built-in PHP server — fully automated.
+
+**Manual setup** is also possible: configure `cipher-core/.dbconfig.php`, run `php install.php` once, then delete it.
 
 ### 💎 Want the Pro Version?
 Contact me directly — see [Contact](#-contact--تماس) below.
@@ -79,12 +84,19 @@ Media · Cloud · Stream · Chat · Desktop · Dashboard · Network · IP Tools 
 - 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ نصب
+
+**نیازمندی‌ها:** PHP 8.0+، MySQL/MariaDB، افزونه `mysqli`
+
+**نصب خودکار تک‌دستوری:**
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
-فایل‌های `config.php` را تنظیم کنید، `schema.sql` را ایمپورت کنید، و `index.php` را باز کنید.
+این اسکریپت نیازمندی‌ها را بررسی می‌کند، دیتابیس را می‌سازد، یک رمز تصادفی امن برای ادمین تولید می‌کند، و در صورت تمایل سرور داخلی PHP را هم اجرا می‌کند — کاملاً خودکار.
+
+**نصب دستی** هم ممکن است: `cipher-core/.dbconfig.php` را تنظیم کنید، یک‌بار `php install.php` را اجرا کنید، سپس آن را حذف کنید.
 
 ### 💎 نسخه Pro می‌خواهید؟
 از بخش [تماس](#-contact--تماس) پایین صفحه با من در ارتباط باشید.
@@ -104,10 +116,13 @@ php -S localhost:8000
 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ التثبيت
+
+تثبيت تلقائي بأمر واحد:
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
 
 ### 💎 هل تريد نسخة Pro؟
@@ -128,10 +143,13 @@ Este repositorio es la **Edición Demo (Gratuita)**. Algunas funciones avanzadas
 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ Instalación
+
+Instalación automatizada con un solo comando:
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
 
 ### 💎 ¿Quieres la versión Pro?
@@ -152,10 +170,13 @@ Contáctame directamente — ver [Contacto](#-contact--تماس) abajo.
 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ Установка
+
+Автоматическая установка одной командой:
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
 
 ### 💎 Хотите версию Pro?
@@ -176,10 +197,13 @@ php -S localhost:8000
 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ 安装
+
+一条命令自动安装：
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
 
 ### 💎 想要 Pro 版本？
@@ -200,10 +224,13 @@ Ce dépôt est l'**Édition Démo (Gratuite)**. Certaines fonctionnalités avanc
 🤖 Cipher AI · 🔐 Cipher Vault · 🔑 Cipher Passwords · 🗄️ Cipher Database · 💾 Cipher Backup · 📡 Cipher Monitor
 
 ### ⚙️ Installation
+
+Installation automatisée en une seule commande :
 ```bash
 git clone https://github.com/prodby026b/cipheros-demo.git
 cd cipheros-demo
-php -S localhost:8000
+chmod +x install.sh
+./install.sh
 ```
 
 ### 💎 Vous voulez la version Pro ?
