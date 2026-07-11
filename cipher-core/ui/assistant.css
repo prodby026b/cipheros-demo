@@ -1,0 +1,19 @@
+#cipher-ai-widget{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    width:350px;
+    height:500px;
+    background:#0f172a;
+    border-radius:20px;
+    overflow:hidden;
+    z-index:999999;
+    box-shadow:0 0 40px #00f0ff55;
+}
+
+#cipher-ai-header{
+    padding:15px;
+    background:#06b6d4;
+    color:white;
+    font-weight:bold;
+}

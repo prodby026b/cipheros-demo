@@ -1,0 +1,11 @@
+# جلوگیری از اجرای PHP و اسکریپت در پوشه آپلود
+php_flag engine off
+RemoveHandler .php .phtml .phar .php3 .php4 .php5 .php7 .pht .shtml
+RemoveType .php .phtml .phar .php3 .php4 .php5 .php7 .pht .shtml
+Options -ExecCGI
+AddType text/plain .php .phtml .phar .php3 .php4 .php5 .php7 .pht
+
+# جلوگیری از traversal و دسترسی مستقیم به اسکریپت‌ها
+<FilesMatch "\.(php|phtml|phar|php[3-7]|pht|shtml|cgi|pl|py|sh)$">
+    Require all denied
+</FilesMatch>
